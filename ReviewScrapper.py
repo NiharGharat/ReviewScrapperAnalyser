@@ -4,9 +4,11 @@ from EachReview import EachReview
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 import logging
+from selenium.webdriver.remote.remote_connection import LOGGER
 import random
 from ScrapperInput import ScrapperInput
 from MainReview import MainReview
+from urllib3.connectionpool import log as urllibLogger
 
 # Req op
 # 1. Website link
@@ -30,7 +32,6 @@ DEFAULT_RATING = "Rated 0.0 out of 5,"
 
 # class variables
 log = logging.getLogger(_DEFAULT_LOGGER_NAME)
-_count_of_reviews = 100
 _google_link = "https://www.google.com/search?q="
 
 
@@ -38,8 +39,7 @@ _google_link = "https://www.google.com/search?q="
 # 1. Get that pointer review block element
 # 2. Create the response
 # 3. Move pointer
-def process_review_block(review_block, pointer: int, list_of_reviews: list) -> None:
-    global _count_of_reviews
+def process_review_block(review_block, pointer: int, list_of_reviews: list, number_of_reviews_required: int, _number_of_reviews: int, all_scrape: bool) -> None:
     log.info("Inside processing_review_block")
     log.debug("Processing review block " + str(pointer))
     log.info("List size is " + str(len(list_of_reviews)))
@@ -82,7 +82,7 @@ def process_review_block(review_block, pointer: int, list_of_reviews: list) -> N
             if more_text_block is None or len(more_text_block) < 1:
                 log.warning("No more element but no exception")
                 raise NoSuchElementException("No more element but no exception")
-            log.info("More exists for this reviewer " + reviewer_name)
+            log.debug("More exists for this reviewer " + reviewer_name)
             review_text = more_text_block[0].text
         except NoSuchElementException:
             log.warning("More does not exists for this reviewer " + reviewer_name)
@@ -91,17 +91,19 @@ def process_review_block(review_block, pointer: int, list_of_reviews: list) -> N
                 log.warning("No more element but no exception")
                 raise NoSuchElementException("No more element but no exception")
             review_text = text_block[0].text
-        except NoSuchElementException:
-            log.warning("No text present even for not more element")
         if len(review_text) == 0:
             log.warning("Empty text")
         each_review = EachReview(name=reviewer_name, review_stars=review_rating, age=review_age,
                                  no_of_reviews=reviewer_no_of_reviews,
                                  review_text=review_text)
         list_of_reviews.append(each_review)
-        _count_of_reviews -= 1
+        if len(list_of_reviews) >= _number_of_reviews:
+            # IE list has been created with appro size
+            break
+        if (len(list_of_reviews) >= number_of_reviews_required) and not all_scrape:
+            break
     log.info("Block " + str(pointer) + " Done")
-    log.info("List size is ", str(len(list_of_reviews)))
+    log.info("List size is " + str(len(list_of_reviews)))
 
 
 def check_component(reviewer_element, element_name: str, action: str) -> None:
@@ -120,22 +122,24 @@ def check_component(reviewer_element, element_name: str, action: str) -> None:
 
 
 def do_scrape(scrapper_input: ScrapperInput):
-    global _count_of_reviews
     global _google_link
-    _count_of_reviews = scrapper_input.count_of_reviews
     logging.basicConfig(level=scrapper_input.logging_level)
 
     # Setup done
     chrome_path = _CHROME_DRIVER_PATH
+    LOGGER.setLevel(logging.INFO)
+    urllibLogger.setLevel(logging.WARNING)
     driver = webdriver.Chrome(chrome_path)
     log.info("Driver opened")
 
     list_of_main_reviews = []
-    if scrapper_input.list_of_names != None and len(scrapper_input.list_of_names) != 0:
+    if scrapper_input.list_of_names is not None and len(scrapper_input.list_of_names) != 0:
         for each_name_of_place in scrapper_input.list_of_names:
             google_search_term = each_name_of_place
             each_search_term = google_search_term.replace(" ", "+")
-            main_review = _do_each_scrape(scrapper_input=scrapper_input, google_search_term=each_search_term, driver=driver)
+            scrapper_input.name_of_place = each_name_of_place
+            main_review = _do_each_scrape(scrapper_input=scrapper_input, google_search_term=each_search_term,
+                                          driver=driver)
             list_of_main_reviews.append(main_review)
     else:
         google_search_term = scrapper_input.name_of_place
@@ -143,23 +147,30 @@ def do_scrape(scrapper_input: ScrapperInput):
         main_review = _do_each_scrape(scrapper_input=scrapper_input, google_search_term=each_search_term, driver=driver)
         list_of_main_reviews.append(main_review)
 
+    driver.quit()
+    log.info("All done, list of reviews were " + str(len(list_of_main_reviews)))
     return list_of_main_reviews
 
 
-def _do_each_scrape(scrapper_input:ScrapperInput, google_search_term: str, driver:webdriver) -> MainReview:
+def _do_each_scrape(scrapper_input: ScrapperInput, google_search_term: str, driver: webdriver) -> MainReview:
     complete_link = _google_link + google_search_term
     log.debug("Complete link created")
     driver.get(complete_link)
+    list_of_reviews = []
 
-    xpath_reviews_to_click = "/html/body/div[7]/div/div[10]/div[2]/div/div/div[2]/div/div[1]/div[2]/div[2]/div/div/span[" \
-                             "3]/span/a"
-    reviews = driver.find_element(By.XPATH, xpath_reviews_to_click)
-    reviews.click()
-    log.info("Clicked on reviews")
-    time.sleep(DEFAULT_INITIAL_SLEEP_SECONDS)
+    try:
+        class_of_span_to_click = "hqzQac"
+        # xpath_reviews_to_click = "/html/body/div[7]/div/div[10]/div[2]/div/div/div[2]/div/div[1]/div[2]/div[2]/div/div/span[3]/span/a"
+        reviews = driver.find_element(By.CLASS_NAME, class_of_span_to_click)
+        reviews.click()
+        log.info("Clicked on reviews")
+        time.sleep(DEFAULT_INITIAL_SLEEP_SECONDS)
+    except NoSuchElementException:
+        log.error("No review element present for " + scrapper_input.name_of_place)
+        return MainReview()
 
     # Main review, get the name, add, overall score, and number of reviewers later
-    #xpath_of_main_review_parent = "/html/body/span[2]/g-lightbox/div[2]/div[3]/span/div/div/div"
+    # xpath_of_main_review_parent = "/html/body/span[2]/g-lightbox/div[2]/div[3]/span/div/div/div"
     # THIS KEEPS CHANGING, THE ELEMENT WHICH GETS MAIN BOX OF THE REVIEW class - AU64fe zsYMMe TUOsUe
     xpath_of_main_review_parent = "/html/body/span[2]/g-lightbox/div/div[2]/div[3]"
     main_review_element = reviews.find_element(By.XPATH, xpath_of_main_review_parent)
@@ -174,12 +185,11 @@ def _do_each_scrape(scrapper_input:ScrapperInput, google_search_term: str, drive
     log.debug("Number of reviews is " + str(_number_of_reviews))
 
     _reviews_block_pointer = 0
-    list_of_reviews = []
     review_block = main_review_element.find_elements_by_class_name(css_path_of_review_parent)
     refresh_element = main_review_element.find_element_by_class_name("loris")
     all_scrape = scrapper_input.all_scrape
     number_of_reviews_required = scrapper_input.count_of_reviews
-    while all_scrape:
+    while True:
         if len(review_block) != _reviews_block_pointer + 1:
             # Need newer elements
             # Call the refresh, and then populate the review_block
@@ -191,10 +201,14 @@ def _do_each_scrape(scrapper_input:ScrapperInput, google_search_term: str, drive
             review_block = main_review_element.find_elements_by_class_name(css_path_of_review_parent)
         # Else Already has those elements process them
 
-        process_review_block(review_block, _reviews_block_pointer, list_of_reviews)
+        process_review_block(review_block, _reviews_block_pointer, list_of_reviews, number_of_reviews_required, _number_of_reviews, all_scrape)
         _reviews_block_pointer += 1
         # Are reviews still left?
-        all_scrape = ((len(list_of_reviews) < _number_of_reviews) & (len(list_of_reviews) < number_of_reviews_required)) & all_scrape
+        if len(list_of_reviews) >= _number_of_reviews:
+            # IE list has been created with appro size
+            break
+        if (len(list_of_reviews) >= number_of_reviews_required) and not all_scrape:
+            break
 
     log.info("List size is " + str(len(list_of_reviews)))
     main_review = MainReview(avg_rating=avg_rating, list_of_reviews=list_of_reviews,
