@@ -1,6 +1,6 @@
 class MainReview:
 
-    def __init__(self, avg_rating, list_of_reviews, number_of_reviews, name_of_apt, address):
+    def __init__(self, avg_rating=0, list_of_reviews=[], number_of_reviews=0, name_of_apt='', address=''):
         self.avg_rating = avg_rating
         self.list_of_reviews = list_of_reviews
         self.number_of_reviews = number_of_reviews
