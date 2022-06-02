@@ -6,3 +6,50 @@ profiles with more than single digit reviews
 number of google local guide
 Overall score
 Number of potential review bombs(5 star 1 star)
+
+Schema of data
+	'name' : <String>, 
+	'age': <String>, ->Can be converted to date format
+	'review_stars': <String>
+	'review_text':
+	'no_of_reviews':
+
+Issues
+	1. The apartment has no reviews
+	-> eg- name_of_place_louise_townhomes
+	-> Done - default values provided
+
+1. Python assertions
+	https://www.delftstack.com/howto/python/assert-equal-in-python/
+
+2. Postgres vs mongoDB
+	https://community.sisense.com/t5/knowledge/postgres-vs-mongodb-for-storing-json-data-which-should-you/ta-p/111
+
+
+-- MongoDb Notes
+https://www.mongodb.com/blog/post/getting-started-with-python-and-mongodb
+
+----Config file----
+/etc/mongod.conf
+----
+1. Created a user
+https://www.mongodb.com/docs/manual/reference/method/db.createUser/#examples
+-> I have created admin user with all access.
+2. Use bind ip as 0.0.0.0
+-> To allow comm with outside world.
+3. Restrict a user by enabling authentication
+https://stackoverflow.com/questions/52361810/how-can-i-restrict-the-user-in-mongodb
+-> Edit the mongo.d file with service stopped to add security checks.
+4. Ensure user is with all required access
+https://dba.stackexchange.com/questions/111727/mongo-create-a-user-as-admin-for-any-database-raise-an-error
+https://www.mongodb.com/docs/manual/reference/method/db.updateUser/#example
+=db.updateUser("admin", {roles:[{role:"dbOwner", db:"admin"},"userAdminAnyDatabase", "dbAdminAnyDatabase", "readWriteAnyDatabase"]})
+5. Start/stop service
+=sudo systemctl status mongod
+=mongosh -u <uName>
+mongo admin -u admin
+
+3. Dump json data using double quotes
+4. Read from jsonDump files and push into collection in mongod
+5. Logging exception - https://stackoverflow.com/questions/5191830/how-do-i-log-a-python-error-with-debug-information
+6. Config reading - https://docs.python.org/3/library/configparser.html

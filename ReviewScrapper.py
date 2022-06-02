@@ -40,11 +40,11 @@ _google_link = "https://www.google.com/search?q="
 # 2. Create the response
 # 3. Move pointer
 def process_review_block(review_block, pointer: int, list_of_reviews: list, number_of_reviews_required: int, _number_of_reviews: int, all_scrape: bool) -> None:
-    log.info("Inside processing_review_block")
+    log.debug("Inside processing_review_block")
     log.debug("Processing review block " + str(pointer))
-    log.info("List size is " + str(len(list_of_reviews)))
+    log.debug("List size is " + str(len(list_of_reviews)))
     block = review_block[pointer].find_elements_by_css_selector("div[jscontroller^='fIQYlf']")
-    log.info("Block size is " + str(len(block)))
+    log.debug("Block size is " + str(len(block)))
     for each_elem in block:
         # Name of reviewer
         reviewer_name_element = each_elem.find_elements_by_css_selector("div[class='TSUbDb']")
@@ -85,14 +85,14 @@ def process_review_block(review_block, pointer: int, list_of_reviews: list, numb
             log.debug("More exists for this reviewer " + reviewer_name)
             review_text = more_text_block[0].text
         except NoSuchElementException:
-            log.warning("More does not exists for this reviewer " + reviewer_name)
+            log.debug("More does not exists for this reviewer " + reviewer_name)
             text_block = each_elem.find_elements_by_css_selector("span[jscontroller='MZnM8e']")
             if text_block is None or len(text_block) < 1:
                 log.warning("No more element but no exception")
                 raise NoSuchElementException("No more element but no exception")
             review_text = text_block[0].text
         if len(review_text) == 0:
-            log.warning("Empty text")
+            log.debug("Empty text")
         each_review = EachReview(name=reviewer_name, review_stars=review_rating, age=review_age,
                                  no_of_reviews=reviewer_no_of_reviews,
                                  review_text=review_text)
@@ -102,8 +102,8 @@ def process_review_block(review_block, pointer: int, list_of_reviews: list, numb
             break
         if (len(list_of_reviews) >= number_of_reviews_required) and not all_scrape:
             break
-    log.info("Block " + str(pointer) + " Done")
-    log.info("List size is " + str(len(list_of_reviews)))
+    log.debug("Block " + str(pointer) + " Done")
+    log.debug("List size is " + str(len(list_of_reviews)))
 
 
 def check_component(reviewer_element, element_name: str, action: str) -> None:
@@ -167,7 +167,7 @@ def _do_each_scrape(scrapper_input: ScrapperInput, google_search_term: str, driv
         time.sleep(DEFAULT_INITIAL_SLEEP_SECONDS)
     except NoSuchElementException:
         log.error("No review element present for " + scrapper_input.name_of_place)
-        return MainReview()
+        return MainReview(name_of_apt=scrapper_input.name_of_place)
 
     # Main review, get the name, add, overall score, and number of reviewers later
     # xpath_of_main_review_parent = "/html/body/span[2]/g-lightbox/div[2]/div[3]/span/div/div/div"
