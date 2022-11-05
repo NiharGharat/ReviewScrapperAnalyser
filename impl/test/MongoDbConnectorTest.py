@@ -1,15 +1,9 @@
 import unittest
-import urllib
 
-from pymongo import MongoClient
-
-import Constants
-import LoadCredentials
-import MongoDbConnector
-import ReviewScrapper
+from impl import review_scrapper, mongo_db_connector, load_credentials, apartment_constants
 from ReviewScrapperTest import ReviewScrapperTest
-from ScrapperInput import ScrapperInput
-from MongoDbConnector import MongoConnector
+from impl.scrapper_input import ScrapperInput
+from impl.mongo_db_connector import MongoConnector
 
 
 class MongoDbConnectorTest(unittest.TestCase):
@@ -22,17 +16,17 @@ class MongoDbConnectorTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        loaded_credentials = LoadCredentials.loadCredentials(
-            path_to_config_file=Constants.CREDENTIAL_FILE_KEY_MONGO_CREDENTIAL_FILE_NAME)
-        MongoDbConnectorTest.USER_NAME = loaded_credentials.get(Constants.CREDENTIAL_FILE_KEY_MONGO_USER_NAME)
-        MongoDbConnectorTest.PASSWORD = loaded_credentials.get(Constants.CREDENTIAL_FILE_KEY_MONGO_PASSWORD)
-        MongoDbConnectorTest.HOST = loaded_credentials.get(Constants.CREDENTIAL_FILE_KEY_MONGO_HOST)
-        MongoDbConnectorTest.PORT = int(loaded_credentials.get(Constants.CREDENTIAL_FILE_KEY_MONGO_PORT))
+        loaded_credentials = load_credentials.loadCredentials(
+            path_to_config_file=apartment_constants.CREDENTIAL_FILE_KEY_MONGO_CREDENTIAL_FILE_NAME)
+        MongoDbConnectorTest.USER_NAME = loaded_credentials.get(apartment_constants.CREDENTIAL_FILE_KEY_MONGO_USER_NAME)
+        MongoDbConnectorTest.PASSWORD = loaded_credentials.get(apartment_constants.CREDENTIAL_FILE_KEY_MONGO_PASSWORD)
+        MongoDbConnectorTest.HOST = loaded_credentials.get(apartment_constants.CREDENTIAL_FILE_KEY_MONGO_HOST)
+        MongoDbConnectorTest.PORT = int(loaded_credentials.get(apartment_constants.CREDENTIAL_FILE_KEY_MONGO_PORT))
 
     def test_push_pull_data(self):
         # Pull from collins and push into mongoDb
         scrapper_input = ScrapperInput(name_of_place=self.name_of_place_the_deans, all_scrape=True)
-        main_review = ReviewScrapper.do_scrape(scrapper_input=scrapper_input)
+        main_review = review_scrapper.do_scrape(scrapper_input=scrapper_input)
 
         ReviewScrapperTest().do_overall_assertions(main_review[0])
 
@@ -40,7 +34,7 @@ class MongoDbConnectorTest(unittest.TestCase):
         database_name = "my_first_db"
         collection_name = "deans_collection"
         mongo_db_connector = MongoConnector()
-        mongo_client = MongoDbConnector.create_mongo_client(host=MongoDbConnectorTest.HOST, port=MongoDbConnectorTest.PORT, user=MongoDbConnectorTest.USER_NAME, pwd=MongoDbConnectorTest.PASSWORD)
+        mongo_client = mongo_db_connector.create_mongo_client(host=MongoDbConnectorTest.HOST, port=MongoDbConnectorTest.PORT, user=MongoDbConnectorTest.USER_NAME, pwd=MongoDbConnectorTest.PASSWORD)
         push_results = mongo_db_connector.push(main_review[0].list_of_reviews, mongo_client=mongo_client,
                                                database=database_name,
                                                collection=collection_name)

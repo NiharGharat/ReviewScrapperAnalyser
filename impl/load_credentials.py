@@ -1,7 +1,7 @@
 import configparser
 
 
-def loadCredentials(path_to_config_file):
+def loadCredentials(path_to_config_file) -> dict:
     config_file = configparser.ConfigParser()
     config_file.read(path_to_config_file)
     mongo_config = config_file["MONGO"]
@@ -14,4 +14,4 @@ def loadCredentials(path_to_config_file):
 
 
 if __name__ == '__main__':
-    loadCredentials("credentials.config")
+    loadCredentials("../confs/credentials.config")
