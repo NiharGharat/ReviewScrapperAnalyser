@@ -146,12 +146,12 @@ class ReviewScrapper:
         self.log.info("Driver opened")
 
         list_of_main_reviews = []
-        if scrapper_input.list_of_names is not None and len(scrapper_input.list_of_names_of_places) != 0:
-            for each_name_of_place in scrapper_input.list_of_names:
+        if scrapper_input.list_of_names_of_places is not None and len(scrapper_input.list_of_names_of_places) != 0:
+            for each_name_of_place in scrapper_input.list_of_names_of_places:
                 google_search_term = each_name_of_place
                 each_search_term = google_search_term.replace(" ", "+")
                 scrapper_input.single_name_of_place_to_scrape = each_name_of_place
-                main_review = self._do_each_scrape(scrapper_input=scrapper_input, google_search_term=each_search_term,
+                main_review = self.__do_each_scrape(scrapper_input=scrapper_input, google_search_term=each_search_term,
                                                    driver=driver)
                 list_of_main_reviews.append(main_review)
         else:
@@ -201,7 +201,7 @@ class ReviewScrapper:
         review_block = main_review_element.find_elements_by_class_name(css_path_of_review_parent)
         refresh_element = main_review_element.find_element_by_class_name("loris")
         all_scrape = scrapper_input.should_scrape_all_reviews
-        number_of_reviews_required = scrapper_input.count_of_reviews
+        number_of_reviews_required = scrapper_input.count_of_reviews_to_scrape
         while True:
             if len(review_block) != _reviews_block_pointer + 1:
                 # Need newer elements

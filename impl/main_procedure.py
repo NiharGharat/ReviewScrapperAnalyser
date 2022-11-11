@@ -1,6 +1,7 @@
 from typing import List
 
-from impl import apartment_constants, json_connector
+from impl import apartment_constants
+from impl.json_connector import JsonConnector
 
 from impl.main_review import MainReview
 from scrapper_input import ScrapperInput
@@ -23,6 +24,7 @@ class Scrapper:
         self.log.info(">> push_to_destination")
         if self.destination_type == apartment_constants.JOB_DESTINATION_FILE_JSON:
             self.log.info("Pushing to raw json")
+            json_connector = JsonConnector(self.destination_path)
             json_connector.push_to_json(list_of_reviews, self.destination_path)
             self.log.info("Successfully pushed to json local")
         elif self.destination_type == apartment_constants.JOB_DESTINATION_NOSQL_MONGO:
@@ -53,10 +55,12 @@ def apartment_review_18():
     default_rating_of_each_review = "Rated 0.0 out of 5,"
     default_text_of_review = "",
     default_no_of_reviews_of_reviewer = "1 review"
-    dump_directory = "dump/dumpDirectory"
+    dump_directory = "dump/dumpDirectory/"
     list_of_apartment_names = \
         [apartment_constants.name_of_place_jefferson_collins,
-         apartment_constants.name_of_place_collins_arlington,
+         apartment_constants.name_of_place_collins_arlington]
+    '''
+    ,
          apartment_constants.name_of_place_viridian_arlington,
          apartment_constants.name_of_place_kace_arlington,
          apartment_constants.name_of_place_roosevelt_arlington,
@@ -72,9 +76,10 @@ def apartment_review_18():
          apartment_constants.name_of_place_pinewoods_apartments,
          apartment_constants.name_of_place_liv_plus_arlington_apartments,
          apartment_constants.name_of_place_the_paddock_apartments,
-         apartment_constants.name_of_place_sam_maverick_apartments]
-    all_scrape = True
-    count_of_reviews_to_scrape = 100
+         apartment_constants.name_of_place_sam_maverick_apartments
+    '''
+    all_scrape = False
+    count_of_reviews_to_scrape = 10
     destination_type = apartment_constants.JOB_DESTINATION_FILE_JSON
     main_scrapper = Scrapper(destination_type = destination_type, destination_path = dump_directory)
     scrapper_input = ScrapperInput(should_scrape_all_reviews=all_scrape,
@@ -90,5 +95,3 @@ def apartment_review_18():
 if __name__ == '__main__':
     apartment_review_18()
     print("All done")
-
-
